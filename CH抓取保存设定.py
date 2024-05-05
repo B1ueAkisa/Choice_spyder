@@ -114,8 +114,9 @@ def 平台名单下载(需要的表单,是否城投=False,几日内不更新=30)
             print()
             print(发行人代码,end=' fail ')
             return
-        过往文件lt=[os.path.join(目标文件夹,x[0]+'更新于'+x[1] )for id,  x in (已有结果[已有结果.代码==发行人代码]).iterrows()]
+        过往文件lt=[os.path.join(目标文件夹,x[0]+'更新于'+x[1] +'.csv')for id,  x in (已有结果[已有结果.代码==发行人代码]).iterrows()]
         DF.to_csv(os.path.join(目标文件夹,发行人代码+'更新于'+今天+数据为空+'.csv'))
+
         for 过往文件 in 过往文件lt:os.remove(过往文件)    
         time.sleep(等待秒数)
     re=list(tqdm(pool.map(内置保存, 目标名单),total=len(目标名单),desc=目标文件夹))
@@ -158,7 +159,7 @@ def 债券名单下载(需要的表单,是否城投=False,几日内不更新=30)
                 print(债券代码,end=' fail ')
                 continue
             DF.to_csv(os.path.join(存储文件夹,债券代码+'更新于'+今天+数据为空+'.csv'))
-            过往文件lt=已有结果[已有结果['代码']==债券代码 ].copy()
+            过往文件lt=已有结果[已有结果['代码']==债券代码].copy()
             过往文件lt=过往文件lt['代码']+'更新于'+过往文件lt['代码']+'.csv'
             for 过往文件 in 过往文件lt:os.remove(os.path.join(存储文件夹,过往文件)) 
             time.sleep(等待秒数)
@@ -169,15 +170,17 @@ def 债券名单下载(需要的表单,是否城投=False,几日内不更新=30)
 
 #%%
 if __name__=='__main__':
-    平台需要的表单=['平台财务', '平台舆情', '平台发债']
+
+    
+    平台需要的表单=['平台舆情','平台财务',  '平台发债']
     for bd in 平台需要的表单:
         平台名单下载(bd,是否城投=False,几日内不更新=30)
         ''''''
 # %%
-if __name__=='__main__':
+'''if __name__=='__main__':
     债券需要的表单=['单债券行情', '单债券舆情']#['单债券舆情']#
     for bd in 债券需要的表单:
-        债券名单下载(bd,是否城投=False,几日内不更新=30)
+        债券名单下载(bd,是否城投=False,几日内不更新=30)'''
 
 
 # %%
