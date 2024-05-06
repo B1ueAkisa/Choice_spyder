@@ -10,7 +10,10 @@ from tqdm import tqdm
 import urllib3
 urllib3.disable_warnings()
 
+
+CH抓取保存设定.全部下载()
 # %%
-#CH抓取保存设定.板块名单下载('全部发行人融资统计')
-CH抓取保存设定.板块名单下载('城投发行人融资统计',是否删除旧文件=False)
-# %%
+# nohup /home/tongjisem/anaconda3/envs/mzb/bin/python /home/tongjisem/Mzb/IFCH解包综合/5-CH解包源/CH抓取.py >  /home/tongjisem/Mzb/IFCH解包综合/5-CH解包源/CH抓取.log 2>&1 &
+# crontab -e
+# 每周更新
+# 1 0 * * 0 nohup /home/tongjisem/anaconda3/envs/mzb/bin/python /home/tongjisem/Mzb/IFCH解包综合/5-CH解包源/CH抓取.py >  /home/tongjisem/Mzb/IFCH解包综合/5-CH解包源/CH抓取.log 2>&1 &
