@@ -1,5 +1,5 @@
 #%%
-import requests,json,os,time,sys
+import requests,json,os,time,sys,re
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 pool = ThreadPoolExecutor(max_workers=16,)
 等待秒数=0.1
@@ -35,8 +35,8 @@ import CH抓取配置,CH抓取源定义
 #%% #前两个
 class 板块名单(CH抓取源定义.板块名单类):
     def __init__(self) -> None:
-        self.可下载方法=[mf for  mf in  CH抓取源定义.板块名单类.__dict__.keys() if not mf.startswith('__')]
-        print(f' {self.__class__.__name__} 的 可下载方法有： {self.可下载方法}')
+        super().__init__()
+        #print(f' {self.__class__.__name__} 的 可下载方法有： {self.可下载方法}') 
 
     def 下载(self,需要的表单,是否删除旧文件=True):
         try:
@@ -47,6 +47,9 @@ class 板块名单(CH抓取源定义.板块名单类):
         文件夹=os.path.join(前置文件夹,'板块成分')
         文件名z=需要的表单+'%s.xlsx'%今天
         文件名=os.path.join(文件夹,文件名z)
+        if os.path.exists(文件名):
+            print(f'{文件名} 存在，跳过下载')
+            return #pd.read_excel(文件名,engine='xlsxwriter')
         os.makedirs(文件夹,exist_ok=True)
         
         DT=方法()
@@ -62,7 +65,6 @@ class 板块名单(CH抓取源定义.板块名单类):
     def 平台名单获取(self,是否城投=False):
         文件夹=os.path.join(前置文件夹,'板块成分')
         os.makedirs(文件夹,exist_ok=True)
-        lt=self.可下载方法
         lt=['全部发行人融资统计', '城投发行人融资统计']
         if 是否城投:需要的表单=lt[1]
         else:需要的表单=lt[0]
@@ -77,8 +79,8 @@ class 板块名单(CH抓取源定义.板块名单类):
 
 class 违约下载(CH抓取源定义.违约类):
     def __init__(self) -> None:
-        self.可下载方法=[mf for  mf in  CH抓取源定义.违约类.__dict__.keys() if not mf.startswith('__')]#[1:]
-        print(f' {self.__class__.__name__} 的 可下载方法有： {self.可下载方法}')
+        super().__init__()
+        #print(f' {self.__class__.__name__} 的 可下载方法有： {self.可下载方法}')
     def 下载(self,需要的表单,是否删除旧文件=True):
         try:
             方法=getattr(self,需要的表单)
@@ -88,6 +90,9 @@ class 违约下载(CH抓取源定义.违约类):
         文件夹=os.path.join(前置文件夹,'违约')
         文件名z=需要的表单+'%s.xlsx'%今天
         文件名=os.path.join(文件夹,文件名z)
+        if os.path.exists(文件名):
+            print(f'{文件名} 存在，跳过下载')
+            return 
         os.makedirs(文件夹,exist_ok=True)
 
         DT=方法()
@@ -99,11 +104,11 @@ class 违约下载(CH抓取源定义.违约类):
                 os.remove(os.path.join(文件夹,过往文件))
                 print(过往文件,end='删除 ')
         return DT
-
+#%% 平台
 class 平台为主体下载(CH抓取源定义.平台类,板块名单):
     def __init__(self) -> None:
-        self.可下载方法=[mf for  mf in  CH抓取源定义.平台类.__dict__.keys() if not mf.startswith('__')]
-        print(f' {self.__class__.__name__} 的 可下载方法有： {self.可下载方法}')
+        super().__init__()
+        #print(f' {self.__class__.__name__} 的 可下载方法有： {self.可下载方法}')
     def 下载(self,需要的表单,是否城投=False,几日内不更新=30):
         try:
             方法=getattr(self,需要的表单)
@@ -119,31 +124,41 @@ class 平台为主体下载(CH抓取源定义.平台类,板块名单):
         时间=已有结果.后缀.str.replace('数据为空','',regex=False).astype('datetime64[ns]')
         这几天结果=set(已有结果[(pd.to_datetime(今天)-时间).dt.days<几日内不更新].代码)
         目标名单=set(平台名单) -这几天结果
+        
         def 内置保存(发行人代码):
-            DF=方法(发行人代码)
-            数据为空=''
+            过往文件dt=已有结果[已有结果['代码']==发行人代码].copy()
+            过往文件lt=过往文件dt['代码']+'更新于'+过往文件dt['后缀']+'.csv'
+            if  re.search('舆情|行情', 需要的表单) and len(过往文件lt)>0:
+                过往文件1名=过往文件lt.values[0]
+                if '数据为空' in 过往文件1名:    过往文件1=None
+                else:
+                    过往文件1=pd.read_csv(os.path.join(目标文件夹,过往文件1名),index_col=0,dtype=str)
+                    if 过往文件1.shape[0]==0:过往文件1=None
+                过往文件1更新日期=过往文件dt['后缀'].iloc[0][:10]
+                DF=方法(发行人代码,开始日期=过往文件1更新日期)
+            else:  DF=方法(发行人代码);过往文件1=None
             if type(DF) ==str:
                 if DF=='返回数据为空':
-                    数据为空=DF[2:]
                     DF= pd.DataFrame()
-                else:   DF=None
+                else:  print(DF); DF=None
             if DF is None:
-                print()
                 print(发行人代码,end=' fail ')
-                return
-            过往文件lt=已有结果[已有结果['代码']==发行人代码].copy()
-            过往文件lt=过往文件lt['代码']+'更新于'+过往文件lt['后缀']+'.csv'
-            DF.to_csv(os.path.join(目标文件夹,发行人代码+'更新于'+今天+数据为空+'.csv'))
-            #过往文件lt=[os.path.join(目标文件夹,x[0]+'更新于'+x[1] )for id,  x in (已有结果[已有结果.代码==发行人代码]).iterrows()]
-            for 过往文件 in 过往文件lt:os.remove(os.path.join(目标文件夹,过往文件)) 
-            #for 过往文件 in 过往文件lt:os.remove(过往文件)    
+                #return
+            else:
+                合并lt=[i for i in [过往文件1,DF] if i is not None]
+                if len(合并lt)>0:  最终DF=pd.concat(合并lt,ignore_index=True)
+                else: 最终DF=pd.DataFrame()
+                数据为空=('数据为空' if 最终DF.shape[0]==0 else '')
+                最终DF.to_csv(os.path.join(目标文件夹,发行人代码+'更新于'+今天+数据为空+'.csv'))
+                for 过往文件 in 过往文件lt:os.remove(os.path.join(目标文件夹,过往文件)) 
+               
             time.sleep(等待秒数)
-        re=list(tqdm(pool.map(内置保存, 目标名单,chunksize=20),total=len(目标名单),desc=目标文件夹))
+        res=list(tqdm(pool.map(内置保存, 目标名单,chunksize=20),total=len(目标名单),desc=目标文件夹))
 #%%债券
 class 债券为主体下载(CH抓取源定义.债券类,板块名单):
     def __init__(self) -> None:
-        self.可下载方法=[mf for  mf in  CH抓取源定义.债券类.__dict__.keys() if not mf.startswith('__')]
-        print(f' {self.__class__.__name__} 的 可下载方法有： {self.可下载方法}')
+        super().__init__()
+        #print(f' {self.__class__.__name__} 的 可下载方法有： {self.可下载方法}')
     def 下载(self,需要的表单,是否城投=False,几日内不更新=30):
         try:
             方法=getattr(self,需要的表单)
@@ -172,55 +187,71 @@ class 债券为主体下载(CH抓取源定义.债券类,板块名单):
             已有结果=pd.DataFrame((os.path.splitext(x)[0].split('更新于') for x in  os.listdir(存储文件夹)),columns=['代码','后缀'])
             时间=已有结果.后缀.str.replace('数据为空','',regex=False).astype('datetime64[ns]')
             这几天结果=set(已有结果[(pd.to_datetime(今天)-时间).dt.days<几日内不更新].代码)
-            目标名单=set(旗下所有债券) -这几天结果
-            for 债券代码 in 目标名单:
-                DF=方法(债券代码)
-                数据为空=''
+            目标名单=set(旗下所有债券) -这几天结果   
+            def 内置保存(债券代码):
+                过往文件dt=已有结果[已有结果['代码']==债券代码].copy()
+                过往文件lt=过往文件dt['代码']+'更新于'+过往文件dt['后缀']+'.csv'
+                
+                if  re.search('舆情|行情', 需要的表单) and len(过往文件lt)>0 :
+                    过往文件1名=过往文件lt.values[0]
+                    if '数据为空' in 过往文件1名:过往文件1=None
+                    else:
+                        过往文件1=pd.read_csv(os.path.join(存储文件夹,过往文件1名),index_col=0,dtype=str)
+                        if 过往文件1.shape[0]==0:过往文件1=None
+                    过往文件1更新日期=过往文件dt['后缀'].iloc[0][:10]
+                    DF=方法(债券代码,开始日期=过往文件1更新日期)
+                else:  DF=方法(债券代码);过往文件1=None
                 if type(DF) ==str:
                     if DF=='返回数据为空':
-                        数据为空=DF[2:]
                         DF= pd.DataFrame()
-                    else:
-                        print(DF,end=' ')   
-                        DF=None
+                    else:  print(DF); DF=None
                 if DF is None:
                     print(债券代码,end=' fail ')
-                    continue
-                DF.to_csv(os.path.join(存储文件夹,债券代码+'更新于'+今天+数据为空+'.csv'))
-                过往文件lt=已有结果[已有结果['代码']==债券代码].copy()
-                过往文件lt=过往文件lt['代码']+'更新于'+过往文件lt['后缀']+'.csv'
-                for 过往文件 in 过往文件lt:os.remove(os.path.join(存储文件夹,过往文件)) 
-                time.sleep(等待秒数)
-        re=list(tqdm(pool.map(单平台所有指定, 目标更新主体['代码'],chunksize=20),total=len(目标更新主体['代码']),desc=需要的表单))
-
-
-
+                else:
+                    合并lt=[i for i in [过往文件1,DF] if i is not None]
+                    if len(合并lt)>0:  最终DF=pd.concat(合并lt,ignore_index=True)
+                    else: 最终DF=pd.DataFrame()
+                    数据为空=('数据为空' if 最终DF.shape[0]==0 else '')
+                    最终DF.to_csv(os.path.join(存储文件夹,债券代码+'更新于'+今天+数据为空+'.csv'))
+                    for 过往文件 in 过往文件lt:os.remove(os.path.join(存储文件夹,过往文件)) 
+                    time.sleep(等待秒数)
+            for 债券代码 in 目标名单:
+                内置保存(债券代码)
+        res=list(tqdm(pool.map(单平台所有指定, 目标更新主体['代码'],chunksize=20),total=len(目标更新主体['代码']),desc=需要的表单))
 
 
 #%%
-
 
 板块名单a=板块名单()
 违约下载a=违约下载()
 平台为主体下载a=平台为主体下载()
 债券为主体下载a=债券为主体下载()
+for 实例 in [板块名单a,违约下载a,平台为主体下载a,债券为主体下载a]:
+    print(f' {实例.__class__.__name__} 的 可下载方法有： {实例.可下载方法}')
+#%%
 
 
 def 全部下载():
     for 实例 in [板块名单a,违约下载a,平台为主体下载a,债券为主体下载a]:
-        for 方法 in 实例.可下载方法:实例.下载(方法,)
+        for 方法 in 实例.可下载方法:
+            方法变量名表=实例.下载.__code__.co_varnames
+            输入变量kwargs={}
+            if '几日内不更新' in 方法变量名表:
+                输入变量kwargs['几日内不更新']=(3 if re.search('舆情|行情|发债', 方法) else 60)
+            实例.下载(方法,**输入变量kwargs)
     '''for 方法 in ['全部发行人融资统计', '城投发行人融资统计']: 板块名单a.下载(方法,)
     for 方法 in 违约下载a.可下载方法:违约下载a.下载(方法,)
     for 方法 in 平台为主体下载a.可下载方法:平台为主体下载a.下载(方法)
     for 方法 in 债券为主体下载a.可下载方法:债券为主体下载a.下载(方法)   ''' 
+#%%
 
 
-
-if __name__=='__main__':
+if __name__=='1__main__':
     名单lt=['全部发行人融资统计', '城投发行人融资统计']
     #for bd in 名单lt: 板块名单a.下载(bd,)
     #for bd in 违约下载a.可下载方法:违约下载a.下载(bd,)
     #for 方法 in 平台为主体下载a.可下载方法:平台为主体下载a.下载(方法)
     for 方法 in 债券为主体下载a.可下载方法:债券为主体下载a.下载(方法)
-
+if __name__=='__main__':
+    平台为主体下载a.下载('平台舆情',几日内不更新=3)
 # %%
