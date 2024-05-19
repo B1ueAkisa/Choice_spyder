@@ -4,18 +4,18 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 pool = ThreadPoolExecutor(max_workers=16,)
 等待秒数=0.1
 from datetime import datetime, timedelta
+
 import pandas as pd
 import urllib.parse
 from tqdm import tqdm
 import urllib3
 urllib3.disable_warnings()
 
-def N天列表(n):
-     return pd.date_range(end=今天,periods=n).strftime("%Y-%m-%d").to_list()
 
-今天 = time.strftime("%Y-%m-%d",time.localtime(time.time()))
-def 真的今天():
-     return time.strftime("%Y-%m-%d",time.localtime(time.time()))
+今天 = datetime.now().strftime("%Y-%m-%d")
+def N天列表(n):
+    return pd.date_range(end=今天,periods=n).strftime("%Y-%m-%d").to_list()
+def 真的今天(): return datetime.now().strftime("%Y-%m-%d")
 
 #%%
 import CH抓取配置,CH抓取源定义
@@ -32,7 +32,18 @@ import CH抓取配置,CH抓取源定义
     /平台主体
         发债，财务，新闻
 '''
+
+class 其他数据处理():
+    def 处理合并(DF,过往文件1):
+        if  DF.empty : 
+            return (过往文件1 if 过往文件1 is not None else pd.DataFrame())
+        最终DF=pd.concat([DF,过往文件1],ignore_index=True)
+        最终DF.drop_duplicates(inplace=True)
+        最终DF.reset_index(drop=True,inplace=True)
+        return 最终DF
+    
 #%% #前两个
+
 class 板块名单(CH抓取源定义.板块名单类):
     def __init__(self) -> None:
         super().__init__()
@@ -104,7 +115,11 @@ class 违约下载(CH抓取源定义.违约类):
                 os.remove(os.path.join(文件夹,过往文件))
                 print(过往文件,end='删除 ')
         return DT
+
+
+
 #%% 平台
+
 class 平台为主体下载(CH抓取源定义.平台类,板块名单):
     def __init__(self) -> None:
         super().__init__()
@@ -133,27 +148,24 @@ class 平台为主体下载(CH抓取源定义.平台类,板块名单):
                 if '数据为空' in 过往文件1名:    过往文件1=None
                 else:
                     过往文件1=pd.read_csv(os.path.join(目标文件夹,过往文件1名),index_col=0,dtype=str)
-                    if 过往文件1.shape[0]==0:过往文件1=None
+                    if 过往文件1.empty:过往文件1=None
                 过往文件1更新日期=过往文件dt['后缀'].iloc[0][:10]
                 DF=方法(发行人代码,开始日期=过往文件1更新日期)
             else:  DF=方法(发行人代码);过往文件1=None
             if type(DF) ==str:
-                if DF=='返回数据为空':
-                    DF= pd.DataFrame()
+                if DF=='返回数据为空':   DF= pd.DataFrame()
                 else:  print(DF); DF=None
             if DF is None:
                 print(发行人代码,end=' fail ')
                 #return
             else:
-                合并lt=[i for i in [过往文件1,DF] if i is not None]
-                if len(合并lt)>0:  最终DF=pd.concat(合并lt,ignore_index=True)
-                else: 最终DF=pd.DataFrame()
-                数据为空=('数据为空' if 最终DF.shape[0]==0 else '')
+                最终DF=其他数据处理.处理合并(DF,过往文件1)
+                数据为空=('数据为空' if 最终DF.empty else '')              
                 最终DF.to_csv(os.path.join(目标文件夹,发行人代码+'更新于'+今天+数据为空+'.csv'))
                 for 过往文件 in 过往文件lt:os.remove(os.path.join(目标文件夹,过往文件)) 
                
             time.sleep(等待秒数)
-        res=list(tqdm(pool.map(内置保存, 目标名单,chunksize=20),total=len(目标名单),desc=目标文件夹))
+        res=list(tqdm(pool.map(内置保存, 目标名单,chunksize=20),total=len(目标名单),mininterval=50,desc=目标文件夹))
 #%%债券
 class 债券为主体下载(CH抓取源定义.债券类,板块名单):
     def __init__(self) -> None:
@@ -208,16 +220,14 @@ class 债券为主体下载(CH抓取源定义.债券类,板块名单):
                 if DF is None:
                     print(债券代码,end=' fail ')
                 else:
-                    合并lt=[i for i in [过往文件1,DF] if i is not None]
-                    if len(合并lt)>0:  最终DF=pd.concat(合并lt,ignore_index=True)
-                    else: 最终DF=pd.DataFrame()
-                    数据为空=('数据为空' if 最终DF.shape[0]==0 else '')
+                    最终DF=其他数据处理.处理合并(DF,过往文件1)
+                    数据为空=('数据为空' if 最终DF.empty else '')              
                     最终DF.to_csv(os.path.join(存储文件夹,债券代码+'更新于'+今天+数据为空+'.csv'))
                     for 过往文件 in 过往文件lt:os.remove(os.path.join(存储文件夹,过往文件)) 
                     time.sleep(等待秒数)
             for 债券代码 in 目标名单:
                 内置保存(债券代码)
-        res=list(tqdm(pool.map(单平台所有指定, 目标更新主体['代码'],chunksize=20),total=len(目标更新主体['代码']),desc=需要的表单))
+        res=list(tqdm(pool.map(单平台所有指定, 目标更新主体['代码'],chunksize=20),total=len(目标更新主体['代码']),mininterval=50,desc=需要的表单))
 
 
 #%%
@@ -239,10 +249,8 @@ def 全部下载():
             if '几日内不更新' in 方法变量名表:
                 输入变量kwargs['几日内不更新']=(3 if re.search('舆情|行情|发债', 方法) else 60)
             实例.下载(方法,**输入变量kwargs)
-    '''for 方法 in ['全部发行人融资统计', '城投发行人融资统计']: 板块名单a.下载(方法,)
-    for 方法 in 违约下载a.可下载方法:违约下载a.下载(方法,)
-    for 方法 in 平台为主体下载a.可下载方法:平台为主体下载a.下载(方法)
-    for 方法 in 债券为主体下载a.可下载方法:债券为主体下载a.下载(方法)   ''' 
+            print('现在是',datetime.now().strftime('%Y年%m月%d号，%H点%M分%S秒'))
+    
 #%%
 
 

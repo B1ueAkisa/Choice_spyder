@@ -12,13 +12,13 @@
 
 ## 错误问题
 
-1. 等待秒数最好不低于0.2，不然很容易被封IP
-2. 输错了cookies会导致一天的429状态码，第二天再用吧。
 
-## scp
+
+## 文件下载scp
 
 scp -r root@10.80.130.52:/home/tongjisem/Mzb/CH爬虫数据/平台/平台舆情  F:/Linux文件
 scp -r  root@10.80.130.52:/home/tongjisem/Mzb/IF爬虫数据/平台/单平台舆情  F:/Linux文件
+密码直接输完按回车
 
 ###
 位置分配=f'''
