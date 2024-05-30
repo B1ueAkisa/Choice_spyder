@@ -166,6 +166,7 @@ class 平台为主体下载(CH抓取源定义.平台类,板块名单):
                
             time.sleep(等待秒数)
         res=list(tqdm(pool.map(内置保存, 目标名单,chunksize=20),total=len(目标名单),mininterval=50,desc=目标文件夹))
+        
 #%%债券
 class 债券为主体下载(CH抓取源定义.债券类,板块名单):
     def __init__(self) -> None:

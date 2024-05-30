@@ -13,7 +13,7 @@ def 反复抓(表单):
     url='https://datacenter-choice.eastmoney.com/choice/api/data/v1/get?source=choice'
     while True:
                 try:
-                    response = requests.get(url,params=表单,timeout=500, verify=False,headers={'Connection':'close'})#cookies=cookies,
+                    response = requests.get(url,params=表单,timeout=10, verify=False,headers={'Connection':'close'})#cookies=cookies,
                     response.close()
                     if response.ok: break
                 except Exception as e:
@@ -224,3 +224,6 @@ if __name__=='__main__':
     aa=平台类a.平台发债('10000506',开始日期='2022-01-01',结束日期='2023-01-02')
     #display(aa)
 # %%
+if __name__=='__main__':
+    板块名单类a=板块名单类()
+    aa=板块名单类a.下载()
